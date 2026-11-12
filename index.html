@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>Temporizador</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2.75rem; }
+
+      :root {
+        --bg: #f3f2ec;
+        --surface: #ffffff;
+        --surface-2: #e9e7dc;
+        --ink: #1b1d17;
+        --ink-soft: #565a4e;
+        --line: #d9d6c8;
+        --train: #c2410c;
+        --train-soft: #fbe9dd;
+        --duo: #4c9a06;
+        --duo-soft: #e6f3d5;
+        --primary: #1b1d17;
+        --primary-ink: #f7f6f0;
+        --ring-track: #e3e0d2;
+        --danger: #b3261e;
+        --shadow: 0 10px 30px rgba(27, 29, 23, .08);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #141511;
+          --surface: #1e201b;
+          --surface-2: #2a2c26;
+          --ink: #f0efe6;
+          --ink-soft: #a9ac9e;
+          --line: #373a31;
+          --train: #fb923c;
+          --train-soft: #3a2417;
+          --duo: #8fd14f;
+          --duo-soft: #26331a;
+          --primary: #f0efe6;
+          --primary-ink: #1b1d17;
+          --ring-track: #33362d;
+          --danger: #f28b82;
+          --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Barlow", system-ui, -apple-system, sans-serif;
+        font-size: 17px;
+        line-height: 1.45;
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 20px 16px 48px;
+      }
+
+      /* ---------- Next session banner ---------- */
+      .next {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: var(--shadow);
+      }
+      .next .dot {
+        flex: none;
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        background: var(--train);
+      }
+      .next.duo .dot { background: var(--duo); }
+      .next.live .dot { animation: pulse 1.2s ease-in-out infinite; }
+      @keyframes pulse { 50% { transform: scale(1.5); opacity: .55; } }
+      @media (prefers-reduced-motion: reduce) {
+        .next.live .dot { animation: none; }
+      }
+      .next .txt { flex: 1; min-width: 0; }
+      .next .when {
+        font-size: .82rem;
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+      }
+      .next .what {
+        font-family: "Barlow Semi Condensed", "Barlow", sans-serif;
+        font-size: 1.45rem;
+        font-weight: 600;
+        line-height: 1.15;
+      }
+      .next .what small { color: var(--ink-soft); font-size: 1.05rem; font-weight: 500; }
+      .next button {
+        flex: none;
+        border: 1px solid var(--line);
+        background: var(--surface-2);
+        color: var(--ink);
+        font: inherit;
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+        min-height: 44px;
+      }
+      .next button:active { transform: translateY(1px); }
+
+      /* ---------- Timer panel ---------- */
+      .panel {
+        margin-top: 18px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+        padding: 22px 18px 24px;
+      }
+      .tabs {
+        display: flex;
+        background: var(--surface-2);
+        border-radius: 12px;
+        padding: 4px;
+        gap: 4px;
+        max-width: 420px;
+        margin: 0 auto;
+      }
+      .tabs button {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        color: var(--ink-soft);
+        font: inherit;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: 9px;
+        padding: 9px 10px;
+        cursor: pointer;
+        min-height: 44px;
+      }
+      .tabs button[aria-selected="true"] {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      }
+
+      .session-label {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 1.05rem;
+        font-weight: 600;
+      }
+      .session-label .tag {
+        display: inline-block;
+        font-size: .78rem;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 999px;
+        margin-right: 8px;
+        vertical-align: 2px;
+      }
+      .tag.train { background: var(--train-soft); color: var(--train); }
+      .tag.duo { background: var(--duo-soft); color: var(--duo); }
+      .tag.free { background: var(--surface-2); color: var(--ink-soft); }
+
+      .dial {
+        position: relative;
+        width: min(320px, 82vw);
+        aspect-ratio: 1;
+        margin: 10px auto 4px;
+      }
+      .dial svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+      .dial .track { stroke: var(--ring-track); }
+      .dial .prog {
+        stroke: var(--train);
+        transition: stroke .3s;
+      }
+      .dial.duo .prog { stroke: var(--duo); }
+      .dial.done .prog { stroke: var(--duo); }
+      .dial .center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 0 12px;
+      }
+      .time {
+        font-family: "Barlow Semi Condensed", "Barlow", sans-serif;
+        font-weight: 700;
+        font-size: clamp(4.2rem, 18vw, 6.2rem);
+        line-height: .95;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: .01em;
+      }
+      .dial.done .time { color: var(--duo); }
+      .time.sw { font-size: clamp(2.9rem, 12.5vw, 4.4rem); }
+      .sub {
+        margin-top: 8px;
+        color: var(--ink-soft);
+        font-size: .98rem;
+        font-weight: 500;
+        min-height: 1.4em;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .btn {
+        font: inherit;
+        font-weight: 600;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        padding: 12px 20px;
+        cursor: pointer;
+        min-height: 52px;
+        min-width: 52px;
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn.primary {
+        background: var(--primary);
+        color: var(--primary-ink);
+        border-color: var(--primary);
+        padding: 12px 34px;
+        font-size: 1.08rem;
+        min-width: 168px;
+      }
+      .btn:disabled { opacity: .45; cursor: default; }
+      .btn:disabled:active { transform: none; }
+
+      /* ---------- Presets ---------- */
+      h2 {
+        font-family: "Barlow Semi Condensed", "Barlow", sans-serif;
+        font-size: 1.35rem;
+        font-weight: 600;
+        margin: 34px 0 4px;
+      }
+      .h-note { color: var(--ink-soft); margin: 0 0 14px; font-size: .97rem; }
+      .presets {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 10px;
+      }
+      .preset {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 13px 15px;
+        cursor: pointer;
+        font: inherit;
+        color: var(--ink);
+        min-height: 64px;
+        width: 100%;
+      }
+      .preset:active { transform: translateY(1px); }
+      .preset[aria-pressed="true"] { border-color: var(--ink); border-width: 2px; padding: 12px 14px; }
+      .preset .mins {
+        flex: none;
+        font-family: "Barlow Semi Condensed", "Barlow", sans-serif;
+        font-weight: 700;
+        font-size: 1.7rem;
+        line-height: 1;
+        min-width: 74px;
+      }
+      .preset .mins small { font-size: .95rem; font-weight: 600; color: var(--ink-soft); }
+      .preset .pname { font-weight: 600; line-height: 1.2; }
+      .preset .ptime { color: var(--ink-soft); font-size: .88rem; }
+      .preset.train .mins { color: var(--train); }
+      .preset.duo .mins { color: var(--duo); }
+
+      .custom {
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+        align-items: stretch;
+        flex-wrap: wrap;
+      }
+      .custom label { font-weight: 600; align-self: center; }
+      .custom input {
+        width: 110px;
+        font: inherit;
+        font-size: 1.05rem;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--ink);
+        min-height: 48px;
+      }
+      .custom button {
+        font: inherit;
+        font-weight: 600;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+        color: var(--ink);
+        padding: 10px 18px;
+        cursor: pointer;
+        min-height: 48px;
+      }
+
+      /* ---------- Laps ---------- */
+      .laps { margin-top: 18px; display: none; }
+      .laps.show { display: block; }
+      .laps h3 {
+        font-family: "Barlow Semi Condensed", "Barlow", sans-serif;
+        font-size: 1.15rem;
+        margin: 0 0 8px;
+      }
+      .laps ol { list-style: none; margin: 0; padding: 0; }
+      .laps li {
+        display: flex;
+        justify-content: space-between;
+        padding: 9px 4px;
+        border-bottom: 1px solid var(--line);
+        font-variant-numeric: tabular-nums;
+      }
+      .laps li span:first-child { color: var(--ink-soft); font-weight: 600; }
+
+      /* ---------- Week agenda ---------- */
+      .week {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .week table { width: 100%; border-collapse: collapse; }
+      .week th, .week td {
+        text-align: left;
+        padding: 11px 14px;
+        font-size: .99rem;
+      }
+      .week tbody tr { border-top: 1px solid var(--line); }
+      .week tbody tr.today { background: var(--train-soft); }
+      .week .day { font-weight: 700; white-space: nowrap; width: 92px; }
+      .week .rest { color: var(--ink-soft); }
+      .week .duo-cell { color: var(--duo); font-weight: 600; white-space: nowrap; text-align: right; }
+      .week .today-badge {
+        display: inline-block;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+        background: var(--train);
+        color: #fff;
+        border-radius: 999px;
+        padding: 2px 8px;
+        margin-left: 6px;
+        vertical-align: 2px;
+      }
+      @media (prefers-color-scheme: dark) {
+        .week .today-badge { color: #1b1d17; }
+      }
+      @media (max-width: 520px) {
+        .week th, .week td { padding: 10px 10px; font-size: .93rem; }
+        .week .day { width: 74px; }
+        .next .what { font-size: 1.25rem; }
+        .btn.primary { min-width: 148px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- Próxima sesión según la agenda real de José -->
+      <section class="next" id="nextCard" aria-live="polite">
+        <span class="dot" aria-hidden="true"></span>
+        <div class="txt">
+          <div class="when" id="nextWhen">Tu agenda</div>
+          <div class="what" id="nextWhat">Cargando…</div>
+        </div>
+        <button type="button" id="nextUse">Usar</button>
+      </section>
+
+      <!-- Panel principal -->
+      <section class="panel" aria-label="Temporizador y cronómetro">
+        <div class="tabs" role="tablist" aria-label="Modo">
+          <button type="button" role="tab" id="tabTimer" aria-selected="true">Temporizador</button>
+          <button type="button" role="tab" id="tabSw" aria-selected="false">Cronómetro</button>
+        </div>
+
+        <div class="session-label" id="sessionLabel">
+          <span class="tag free">Libre</span><span id="sessionName">Elige una sesión o pon tus minutos</span>
+        </div>
+
+        <div class="dial" id="dial">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="track" cx="100" cy="100" r="90" fill="none" stroke-width="10" />
+            <circle class="prog" id="ring" cx="100" cy="100" r="90" fill="none" stroke-width="10"
+              stroke-linecap="round" stroke-dasharray="565.49" stroke-dashoffset="0" />
+          </svg>
+          <div class="center">
+            <div class="time" id="timeDisplay" role="timer" aria-label="Tiempo">55:00</div>
+            <div class="sub" id="subDisplay">Listo para empezar</div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button type="button" class="btn" id="btnMinus" title="Quitar un minuto">−1 min</button>
+          <button type="button" class="btn primary" id="btnStart">Iniciar</button>
+          <button type="button" class="btn" id="btnPlus" title="Añadir un minuto">+1 min</button>
+          <button type="button" class="btn" id="btnLap" style="display:none">Vuelta</button>
+          <button type="button" class="btn" id="btnReset">Reiniciar</button>
+        </div>
+
+        <div class="laps" id="lapsBox">
+          <h3>Vueltas</h3>
+          <ol id="lapsList"></ol>
+        </div>
+      </section>
+
+      <!-- Presets: entrenos de Rutina Progresiva (Mes 02) y Duolingo -->
+      <h2>Tus sesiones</h2>
+      <p class="h-note">Entrenamiento a las 11:00 a. m. · Duolingo a la 1:00 p. m., todos los días. Toca una sesión para cargarla en el temporizador.</p>
+      <div class="presets" id="presets"></div>
+
+      <form class="custom" id="customForm">
+        <label for="customMin">Otro tiempo:</label>
+        <input type="number" id="customMin" min="1" max="600" step="1" inputmode="numeric" placeholder="Minutos" />
+        <button type="submit">Poner</button>
+      </form>
+
+      <!-- Agenda semanal -->
+      <h2>Tu semana</h2>
+      <p class="h-note">Semana 6 · Mes 02 Intermedio de Rutina Progresiva, más tu práctica diaria de Duolingo.</p>
+      <div class="week">
+        <table>
+          <thead>
+            <tr><th scope="col">Día</th><th scope="col">11:00 · Entrenamiento</th><th scope="col" style="text-align:right">13:00 · Duolingo</th></tr>
+          </thead>
+          <tbody id="weekBody"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ============ Datos reales de la agenda ============ */
+        // day: 0=domingo ... 6=sábado (como Date.getDay())
+        var WORKOUTS = [
+          { day: 1, name: "Piernas + Core", mins: 55 },
+          { day: 2, name: "Cardio de mayor duración", mins: 55 },
+          { day: 3, name: "Upper Body Volumen", mins: 55 },
+          { day: 5, name: "Piernas + Potencia", mins: 58 },
+          { day: 6, name: "HIIT Avanzado", mins: 45 }
+        ];
+        var DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+        var DAY_SHORT = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+        function allSessions() {
+          var list = [];
+          WORKOUTS.forEach(function (w) {
+            list.push({ day: w.day, hour: 11, min: 0, name: w.name, mins: w.mins, type: "train" });
+          });
+          for (var d = 0; d < 7; d++) {
+            list.push({ day: d, hour: 13, min: 0, name: "Duolingo", mins: 15, type: "duo" });
+          }
+          return list;
+        }
+
+        /* ============ Elementos ============ */
+        var $ = function (id) { return document.getElementById(id); };
+        var timeEl = $("timeDisplay"), subEl = $("subDisplay"), ringEl = $("ring"),
+            dialEl = $("dial"), btnStart = $("btnStart"), btnReset = $("btnReset"),
+            btnPlus = $("btnPlus"), btnMinus = $("btnMinus"), btnLap = $("btnLap"),
+            labelEl = $("sessionLabel"), nameEl = $("sessionName"),
+            lapsBox = $("lapsBox"), lapsList = $("lapsList");
+        var CIRC = 565.49;
+
+        /* ============ Estado ============ */
+        var mode = "timer"; // "timer" | "sw"
+
+        var timer = {
+          duration: 55 * 60 * 1000,
+          remaining: 55 * 60 * 1000,
+          endAt: 0,
+          running: false,
+          done: false,
+          name: "Piernas + Core",
+          type: "train"
+        };
+        var sw = { elapsed: 0, startStamp: 0, running: false, laps: [] };
+
+        var tickId = null;
+        var audioCtx = null;
+        var wakeLock = null;
+
+        /* ============ Utilidades ============ */
+        function fmt(ms, showHours) {
+          if (ms < 0) ms = 0;
+          var totalSec = Math.ceil(ms / 1000);
+          if (mode === "sw") totalSec = Math.floor(ms / 1000);
+          var h = Math.floor(totalSec / 3600),
+              m = Math.floor((totalSec % 3600) / 60),
+              s = totalSec % 60;
+          function p(n) { return (n < 10 ? "0" : "") + n; }
+          if (h > 0 || showHours) return h + ":" + p(m) + ":" + p(s);
+          return p(m) + ":" + p(s);
+        }
+        function fmtSw(ms) {
+          var totalSec = Math.floor(ms / 1000);
+          var h = Math.floor(totalSec / 3600),
+              m = Math.floor((totalSec % 3600) / 60),
+              s = totalSec % 60,
+              cs = Math.floor((ms % 1000) / 10);
+          function p(n) { return (n < 10 ? "0" : "") + n; }
+          if (h > 0) return h + ":" + p(m) + ":" + p(s);
+          return p(m) + ":" + p(s) + "." + p(cs);
+        }
+
+        function ensureAudio() {
+          if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; }
+          }
+          if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+        }
+        function beep(freq, at, dur) {
+          if (!audioCtx) return;
+          var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.type = "sine"; o.frequency.value = freq;
+          var t = audioCtx.currentTime + at;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          o.connect(g); g.connect(audioCtx.destination);
+          o.start(t); o.stop(t + dur + 0.05);
+        }
+        function alarm() {
+          ensureAudio();
+          beep(880, 0, 0.35); beep(880, 0.45, 0.35); beep(1174, 0.9, 0.7);
+          if (navigator.vibrate) { try { navigator.vibrate([250, 120, 250, 120, 450]); } catch (e) {} }
+        }
+
+        function requestWake() {
+          if ("wakeLock" in navigator && !wakeLock) {
+            navigator.wakeLock.request("screen").then(function (wl) {
+              wakeLock = wl;
+              wl.addEventListener("release", function () { wakeLock = null; });
+            }).catch(function () {});
+          }
+        }
+        function releaseWake() {
+          if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
+        }
+
+        /* ============ Render ============ */
+        function setLabel(name, type) {
+          var tagTxt = type === "train" ? "Entreno" : type === "duo" ? "Duolingo" : "Libre";
+          labelEl.innerHTML = "";
+          var tag = document.createElement("span");
+          tag.className = "tag " + (type || "free");
+          tag.textContent = tagTxt;
+          labelEl.appendChild(tag);
+          var nm = document.createElement("span");
+          nm.id = "sessionName";
+          nm.textContent = name;
+          labelEl.appendChild(nm);
+          nameEl = nm;
+        }
+
+        function renderTimer() {
+          timeEl.textContent = fmt(timer.remaining);
+          timeEl.classList.remove("sw");
+          var frac = timer.duration > 0 ? timer.remaining / timer.duration : 0;
+          ringEl.style.strokeDashoffset = String(CIRC * (1 - frac));
+          dialEl.classList.toggle("duo", timer.type === "duo");
+          dialEl.classList.toggle("done", timer.done);
+          btnPlus.style.display = ""; btnMinus.style.display = "";
+          btnLap.style.display = "none";
+          lapsBox.classList.remove("show");
+          if (timer.done) {
+            subEl.textContent = "¡Tiempo cumplido! Buen trabajo, José.";
+            btnStart.textContent = "Otra vez";
+          } else if (timer.running) {
+            subEl.textContent = "En curso · termina a las " + new Date(timer.endAt).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
+            btnStart.textContent = "Pausar";
+          } else if (timer.remaining < timer.duration) {
+            subEl.textContent = "En pausa · quedan " + fmt(timer.remaining);
+            btnStart.textContent = "Continuar";
+          } else {
+            subEl.textContent = "Listo para empezar · " + Math.round(timer.duration / 60000) + " min";
+            btnStart.textContent = "Iniciar";
+          }
+          btnMinus.disabled = timer.running || timer.done;
+          btnPlus.disabled = timer.done;
+        }
+
+        function renderSw() {
+          var now = sw.running ? sw.elapsed + (Date.now() - sw.startStamp) : sw.elapsed;
+          timeEl.textContent = fmtSw(now);
+          timeEl.classList.add("sw");
+          ringEl.style.strokeDashoffset = "0";
+          dialEl.classList.remove("duo", "done");
+          btnPlus.style.display = "none"; btnMinus.style.display = "none";
+          btnLap.style.display = "";
+          btnLap.disabled = !sw.running && now === 0;
+          if (sw.running) { subEl.textContent = "Cronómetro en curso"; btnStart.textContent = "Pausar"; }
+          else if (now > 0) { subEl.textContent = "En pausa"; btnStart.textContent = "Continuar"; }
+          else { subEl.textContent = "Listo para empezar"; btnStart.textContent = "Iniciar"; }
+          lapsBox.classList.toggle("show", sw.laps.length > 0);
+        }
+
+        function render() { if (mode === "timer") renderTimer(); else renderSw(); }
+
+        /* ============ Motor ============ */
+        function tick() {
+          if (timer.running) {
+            timer.remaining = timer.endAt - Date.now();
+            if (timer.remaining <= 0) {
+              timer.remaining = 0;
+              timer.running = false;
+              timer.done = true;
+              stopTick();
+              releaseWake();
+              alarm();
+            }
+            if (mode === "timer") renderTimer();
+          }
+          if (mode === "sw" && sw.running) {
+            renderSw();
+          }
+        }
+        function startTick() { if (!tickId) tickId = setInterval(tick, 50); }
+        function stopTick() {
+          var anyRunning = timer.running || sw.running;
+          if (!anyRunning && tickId) { clearInterval(tickId); tickId = null; }
+        }
+
+        /* ============ Acciones ============ */
+        function startPause() {
+          ensureAudio();
+          if (mode === "timer") {
+            if (timer.done) { resetTimer(); }
+            if (timer.running) {
+              timer.remaining = Math.max(0, timer.endAt - Date.now());
+              timer.running = false;
+              releaseWake();
+            } else {
+              timer.endAt = Date.now() + timer.remaining;
+              timer.running = true;
+              requestWake();
+              startTick();
+            }
+            stopTick(); renderTimer();
+          } else {
+            if (sw.running) {
+              sw.elapsed += Date.now() - sw.startStamp;
+              sw.running = false;
+              releaseWake();
+            } else {
+              sw.startStamp = Date.now();
+              sw.running = true;
+              requestWake();
+              startTick();
+            }
+            stopTick(); renderSw();
+          }
+        }
+
+        function resetTimer() {
+          timer.running = false; timer.done = false;
+          timer.remaining = timer.duration;
+          releaseWake(); stopTick(); renderTimer();
+        }
+        function resetSw() {
+          sw.running = false; sw.elapsed = 0; sw.laps = [];
+          lapsList.innerHTML = "";
+          releaseWake(); stopTick(); renderSw();
+        }
+
+        function loadSession(name, mins, type) {
+          timer.duration = mins * 60 * 1000;
+          timer.name = name; timer.type = type;
+          mode = "timer";
+          $("tabTimer").setAttribute("aria-selected", "true");
+          $("tabSw").setAttribute("aria-selected", "false");
+          setLabel(name, type);
+          resetTimer();
+          markActivePreset(name, mins);
+        }
+
+        btnStart.addEventListener("click", startPause);
+        btnReset.addEventListener("click", function () {
+          if (mode === "timer") resetTimer(); else resetSw();
+        });
+        btnPlus.addEventListener("click", function () {
+          if (mode !== "timer" || timer.done) return;
+          timer.duration += 60000; timer.remaining += 60000;
+          if (timer.running) timer.endAt += 60000;
+          renderTimer();
+        });
+        btnMinus.addEventListener("click", function () {
+          if (mode !== "timer" || timer.running || timer.done) return;
+          if (timer.remaining > 60000) { timer.duration -= 60000; timer.remaining -= 60000; }
+          renderTimer();
+        });
+        btnLap.addEventListener("click", function () {
+          if (mode !== "sw") return;
+          var now = sw.running ? sw.elapsed + (Date.now() - sw.startStamp) : sw.elapsed;
+          if (now === 0) return;
+          var prev = sw.laps.length ? sw.laps[sw.laps.length - 1].total : 0;
+          sw.laps.push({ total: now, split: now - prev });
+          var li = document.createElement("li");
+          var a = document.createElement("span"); a.textContent = "Vuelta " + sw.laps.length;
+          var b = document.createElement("span"); b.textContent = fmtSw(now - prev) + "  ·  " + fmtSw(now);
+          li.appendChild(a); li.appendChild(b);
+          lapsList.insertBefore(li, lapsList.firstChild);
+          renderSw();
+        });
+
+        $("tabTimer").addEventListener("click", function () {
+          mode = "timer";
+          this.setAttribute("aria-selected", "true");
+          $("tabSw").setAttribute("aria-selected", "false");
+          setLabel(timer.name, timer.type);
+          render();
+        });
+        $("tabSw").addEventListener("click", function () {
+          mode = "sw";
+          this.setAttribute("aria-selected", "true");
+          $("tabTimer").setAttribute("aria-selected", "false");
+          setLabel("Cronómetro libre", "free");
+          render();
+        });
+
+        /* ============ Presets ============ */
+        var presetsEl = $("presets");
+        var presetBtns = [];
+        function addPreset(name, mins, type, timeTxt) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "preset " + type;
+          b.setAttribute("aria-pressed", "false");
+          var m = document.createElement("span");
+          m.className = "mins";
+          m.innerHTML = mins + " <small>min</small>";
+          var info = document.createElement("span");
+          var n = document.createElement("span"); n.className = "pname"; n.textContent = name;
+          var t = document.createElement("span"); t.className = "ptime"; t.textContent = timeTxt;
+          info.appendChild(n); info.appendChild(document.createElement("br")); info.appendChild(t);
+          b.appendChild(m); b.appendChild(info);
+          b.addEventListener("click", function () { loadSession(name, mins, type); });
+          presetsEl.appendChild(b);
+          presetBtns.push({ btn: b, name: name, mins: mins });
+        }
+        var dayFor = {};
+        WORKOUTS.forEach(function (w) { dayFor[w.name] = w.day; });
+        WORKOUTS.forEach(function (w) {
+          addPreset(w.name, w.mins, "train", DAY_NAMES[w.day] + " · 11:00 a. m.");
+        });
+        addPreset("Duolingo", 15, "duo", "Todos los días · 1:00 p. m.");
+
+        function markActivePreset(name, mins) {
+          presetBtns.forEach(function (p) {
+            p.btn.setAttribute("aria-pressed", (p.name === name && p.mins === mins) ? "true" : "false");
+          });
+        }
+
+        $("customForm").addEventListener("submit", function (ev) {
+          ev.preventDefault();
+          var v = parseInt($("customMin").value, 10);
+          if (!v || v < 1) return;
+          loadSession("Tiempo libre · " + v + " min", v, "free");
+        });
+
+        /* ============ Agenda semanal ============ */
+        var weekBody = $("weekBody");
+        var todayIdx = new Date().getDay();
+        var order = [1, 2, 3, 4, 5, 6, 0];
+        order.forEach(function (d) {
+          var w = null;
+          WORKOUTS.forEach(function (x) { if (x.day === d) w = x; });
+          var tr = document.createElement("tr");
+          if (d === todayIdx) tr.className = "today";
+          var tdDay = document.createElement("td"); tdDay.className = "day";
+          tdDay.textContent = DAY_NAMES[d];
+          if (d === todayIdx) {
+            var badge = document.createElement("span");
+            badge.className = "today-badge"; badge.textContent = "Hoy";
+            tdDay.appendChild(badge);
+          }
+          var tdW = document.createElement("td");
+          if (w) { tdW.textContent = w.name + " · " + w.mins + " min"; }
+          else { tdW.textContent = d === 4 ? "Descanso activo" : "Descanso total"; tdW.className = "rest"; }
+          var tdD = document.createElement("td"); tdD.className = "duo-cell"; tdD.textContent = "15 min";
+          tr.appendChild(tdDay); tr.appendChild(tdW); tr.appendChild(tdD);
+          weekBody.appendChild(tr);
+        });
+
+        /* ============ Próxima sesión ============ */
+        function nextSession() {
+          var now = new Date();
+          var sessions = allSessions();
+          var best = null;
+          for (var add = 0; add < 8; add++) {
+            var base = new Date(now.getFullYear(), now.getMonth(), now.getDate() + add);
+            sessions.forEach(function (s) {
+              if (s.day !== base.getDay()) return;
+              var start = new Date(base.getFullYear(), base.getMonth(), base.getDate(), s.hour, s.min, 0);
+              var end = new Date(start.getTime() + s.mins * 60000);
+              var cand = null;
+              if (now >= start && now < end) cand = { s: s, start: start, live: true, add: add };
+              else if (start > now) cand = { s: s, start: start, live: false, add: add };
+              if (cand && (!best || cand.start < best.start)) best = cand;
+            });
+            if (best && best.add === add) {
+              // seguir solo si es del mismo día y puede haber una en curso anterior ya capturada
+              if (best.live) break;
+              // si ya encontramos la siguiente de hoy, no hace falta seguir
+              if (add === 0 && best) break;
+            }
+          }
+          return best;
+        }
+
+        function relDay(add, date) {
+          if (add === 0) return "Hoy";
+          if (add === 1) return "Mañana";
+          return DAY_NAMES[date.getDay()];
+        }
+
+        var next = nextSession();
+        var nextCard = $("nextCard");
+        if (next) {
+          nextCard.classList.toggle("duo", next.s.type === "duo");
+          nextCard.classList.toggle("live", next.live);
+          $("nextWhen").textContent = next.live
+            ? "Ahora mismo · " + relDay(next.add, next.start)
+            : "Siguiente · " + relDay(next.add, next.start) + " " + next.start.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
+          $("nextWhat").innerHTML = "";
+          var span = document.createElement("span");
+          span.textContent = next.s.name + " ";
+          var small = document.createElement("small");
+          small.textContent = "· " + next.s.mins + " min";
+          $("nextWhat").appendChild(span); $("nextWhat").appendChild(small);
+          $("nextUse").textContent = next.live ? "Empezar ahora" : "Cargar";
+          $("nextUse").addEventListener("click", function () {
+            loadSession(next.s.name, next.s.mins, next.s.type);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          });
+          // Carga por defecto la sesión que sigue (o la de ahora)
+          loadSession(next.s.name, next.s.mins, next.s.type);
+        } else {
+          nextCard.style.display = "none";
+          loadSession("Piernas + Core", 55, "train");
+        }
+
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) tick();
+        });
+
+        render();
+      })();
+    </script>
+  </body>
+</html>
